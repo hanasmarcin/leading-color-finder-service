@@ -1,12 +1,7 @@
-import numpy
 import requests
 import numpy as np
 from PIL import Image
 from io import BytesIO
-import matplotlib.pyplot as plt
-import time
-from mpl_toolkits.mplot3d import Axes3D
-
 
 
 def print_full_array():
@@ -87,6 +82,7 @@ class KMeansClustering:
         self.centroids = np.empty((self.k, 3))
         self.cluster_map = np.empty((self.data.shape[0], self.data.shape[1]))
         self.cluster_image = np.empty(self.data.shape)
+        self.samples_per_centroid = np.zeros((self.k, 1))
         # self.randoms, self.odchylenie = self.initial_centroids()
         # self.clusters = []
         # for i in range(0, self.k):  # create list of lists
@@ -99,8 +95,9 @@ class KMeansClustering:
         """
         # find first centroid
         data_flat_indexes = range(self.samples_count)
-        centroid_id = np.random.choice(data_flat_indexes)
-        self.centroids[0] = self.data_flat[centroid_id]
+        # centroid_id = np.random.choice(data_flat_indexes)
+        # self.centroids[0] = self.data_flat[centroid_id]
+        self.centroids[0] = np.zeros(3)
 
         # calculate probabilities for another centroids
         distances = calculate_distances_from_point(self.data_flat, self.centroids[0])
@@ -111,9 +108,9 @@ class KMeansClustering:
         for i in range(1, self.k):
             centroid_id = np.random.choice(data_flat_indexes, p=probability_for_samples)
             self.centroids[i] = self.data_flat[centroid_id]
-            # distances *= calculate_distances_from_point(self.data_flat, self.centroids[i])
-            # distances_square *= np.float_power(distances, 2)
-            # probability_for_samples = distances_square / sum(distances_square)
+            distances *= calculate_distances_from_point(self.data_flat, self.centroids[i])
+            distances_square *= np.float_power(distances, 3)
+            probability_for_samples = distances_square / sum(distances_square)
 
         return self.centroids
 
@@ -134,7 +131,6 @@ class KMeansClustering:
         for i in range(self.data.shape[0]):
             self.cluster_map[i] = cluster_ids[i*self.data.shape[1]:(i+1)*self.data.shape[1]]
         print_full_array()
-        #print(self.cluster_map)
 
     def create_cluster_image(self):
         for x, y in self.data_indexes:
@@ -148,17 +144,24 @@ class KMeansClustering:
         while True:
             xd += 1
             new_cluster_ids = self.calculate_clusters()
-            self.create_cluster_image()
-            self.show_palette()
-            if np.array_equal(cluster_ids, new_cluster_ids) or xd >= 10:
+            if np.array_equal(cluster_ids, new_cluster_ids) or xd >= 3:
                 break
             cluster_ids = new_cluster_ids
+
+        self.show_palette()
+        self.create_cluster_image()
+
         return self.centroids
 
     def show_palette(self):
-        img = np.empty((kk * 100, 100, 3))
-        for i in range(0, kk):
-            img[100 * i:100 * i + 99][0:99] = self.centroids[i]
+        img = np.ones((int(self.samples_count / 10), 100, 3))
+        print(f"samples per centroid {self.samples_per_centroid}")
+        h = 0
+        for i in range(0, self.k):
+            new_h = h + int(self.samples_per_centroid[i] / 10)
+            img[h:new_h] *= self.centroids[i]
+            print(f"h {h} new_h {new_h} shape {img[h:new_h].shape}")
+            h = new_h
         show_image_from_array(img)
 
     def calculate_centroids_for_clusters_samples(self, data, cluster_ids):
@@ -170,19 +173,18 @@ class KMeansClustering:
         :return:
         """
         new_centroids = np.zeros((self.k, 3))
-        samples_per_centroid = np.zeros((self.k, 1))
+        self.samples_per_centroid = np.zeros((self.k, 1))
         for sample_id, cluster_id in enumerate(cluster_ids):
             new_centroids[cluster_id] = np.add(new_centroids[cluster_id], data[sample_id])
-            samples_per_centroid[cluster_id] += 1
-
+            self.samples_per_centroid[cluster_id] += 1
         denominator = np.ones(new_centroids.shape)
-        denominator *= samples_per_centroid
+        denominator *= self.samples_per_centroid
         new_centroids = np.divide(new_centroids, denominator)
         return new_centroids
 
 
-link = "https://i.scdn.co/image/6420909be815e471f484a779e0c9429ad1f4f47c"
-kk = 3
+link = "https://i.scdn.co/image/125736ae7eabfbb4edc14307c5bc3313ee54442d"
+kk = 5
 image_link = download_image_to_array(link)
 clustering = KMeansClustering(k=kk, data=image_link)
 show_image_from_array(image_link)
