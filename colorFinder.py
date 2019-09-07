@@ -5,107 +5,177 @@ from PIL import Image
 from io import BytesIO
 
 
+def print_full_array():
+    np.set_printoptions(threshold=np.inf)
+
+
 def download_image_to_array(url):
+    """
+    Function downloads image from url and saves it to array
+    :param url: html link to the picture
+    :return: nparray with shape (h, w, 3), containing RGB values for each pixel of the picture
+    """
     response = requests.get(url)
     image = Image.open(BytesIO(response.content))
+    image = image.resize((100, 100))
     image_array = np.array(image)
     return image_array
 
 
 def show_image_from_array(image_array):
+    """
+    Function shows image based of the given nparray
+    :param image_array: nparray with shape (h, w, 3)
+    """
     image = Image.fromarray(image_array.astype('uint8'))
     image.show()
 
 
-def distance(sample, centroid):
+def calculate_distance(point_a, point_b):
+    """
+    Function calculates distance between two points
+    :param point_a: fist point's coordinates
+    :param point_b: second point's coordinates
+    :return: distance between two points
+    """
     result = 0
-    for dim in range(0, 2):
-        result += (sample[dim] - centroid[dim]) ** 2
-
+    for dim in range(0, len(point_a)):
+        result += (point_a[dim] - point_b[dim]) ** 2
     result = np.sqrt(result)
     return result
 
 
+def flatten_array(array):
+    """
+    Function transforms 3-dimensional nparray  to 2-dimensional nparray
+    :param array: nparray with shape (h, w, 3)
+    :return: nparray with shape (h*w, 3)
+    """
+    flat_array = []
+    for row in array:
+        for sample in row:
+            flat_array.append(sample)
+    return np.array(flat_array)
+
+
+def calculate_distances_from_point(data, point):
+    """
+    Function calculates distances for every sample in data to given point
+    :param data: nparray with shape (len, 3)
+    :param point: nparray with shape (3)
+    :return: nparray with shape (len, 1) containing distance for each sample
+    """
+    distances = np.empty(data.shape[0])
+    for (i, sample) in enumerate(data):
+        distances[i] = calculate_distance(sample, point)
+    return distances
+
+
 class KMeansClustering:
-    def __init__(self, k, data):
+
+    def __init__(self, k: int, data: np.ndarray):
+        """
+        Method initializes object
+        :param k: number of clusters, to which data will be divided
+        :param data: nparray with shape (h, w, 3),
+        containing samples (with shape (3)), that will be divided to clusters
+        """
         self.data = np.array(data)
+        self.data_flat = flatten_array(self.data)
+        self.samples_count = self.data_flat.shape[0]
         self.data_indexes = [(x, y) for x in range(0, self.data.shape[0]) for y in range(0, self.data.shape[1])]
         self.k = k
-        self.centroids = [0, 0, 0]
-        self.randoms, self.odchylenie = self.initial_centroids()
-        self.clusters = []
-        for i in range(0, self.k):    # create list of lists
-            self.clusters.append([])
+        self.centroids = np.empty((self.k, 3))
+        # self.randoms, self.odchylenie = self.initial_centroids()
+        # self.clusters = []
+        # for i in range(0, self.k):  # create list of lists
+        #    self.clusters.append([])
 
-    def initial_centroids(self):
+    def calculate_initial_centroids(self):
+        """
+        Method calculates k centroids (clusters "origins")
+        :return: calculated clusters, nparray with shape(k, 3)
+        """
+        # find first centroid
+        data_flat_indexes = range(self.samples_count)
+        centroid_id = np.random.choice(data_flat_indexes)
+        self.centroids[0] = self.data_flat[centroid_id]
+
+        # calculate probabilities for another centroids
+        distances = calculate_distances_from_point(self.data_flat, self.centroids[0])
+        distances_square = np.float_power(distances, 3)
+        print(distances_square)
+        probability_for_samples = distances_square/sum(distances_square)
+
+        # find another centroids
+        for i in range(1, self.k):
+            centroid_id = np.random.choice(data_flat_indexes, p=probability_for_samples)
+            self.centroids[i] = self.data_flat[centroid_id]
+            distances *= calculate_distances_from_point(self.data_flat, self.centroids[i])
+            distances_square *= np.float_power(distances, 3)
+            probability_for_samples = distances_square / sum(distances_square)
+
+        return self.centroids
+
+    def calculate_distances_for_data(self):
+        distances = np.empty((self.k, self.samples_count))
+        for i, centroid in enumerate(self.centroids):
+            distances[i] = calculate_distances_from_point(self.data_flat, centroid)
+        return distances
+
+    def calculate_clusters(self):
+        distances = self.calculate_distances_for_data()
+        cluster_ids = np.argmin(distances, axis=0)
+        self.centroids = self.calculate_centroids_for_clusters_samples(self.data_flat, cluster_ids)
+        return cluster_ids
+
+    def calculate_colors(self):
+        cluster_ids = np.empty(self.samples_count)
+        xd = 0
         while True:
-            samples = []
-            for row in self.data:    # flatten 4-dimensional nparray to array of tuples
-                for sample in row:
-                    samples.append(tuple(sample))
-            randoms = random.sample(samples, self.k)    # find k random samples
-            randoms = np.array(randoms)
-            odchylenie = np.std(randoms, axis=1)
-            break;
-        return randoms, odchylenie
+            xd += 1
+            new_cluster_ids = self.calculate_clusters()
+            img = np.empty((kk * 100, 100, 3))
+            for i in range(0, kk):
+                img[100 * i:100 * i + 99][0:99] = self.centroids[i]
+            show_image_from_array(img)
+            if np.array_equal(cluster_ids, new_cluster_ids) or xd >= 10:
+                break
+        return self.centroids
 
-    def find_distances_for_sample(self, sample):
-        dist = []
-        for cluster_id in range(0, self.k):
-            centroid = self.centroids[cluster_id]
-            dist.append(distance(sample, centroid))
-        return dist
+    def calculate_centroids_for_clusters_samples(self, data, cluster_ids):
+        """
+        Method calculates new centroids for given samples' distances
+        from existing centroids and their assignment to them
+        :param data: nparray with shape (h*w, 3)
+        :param cluster_ids: nparray with shape (h*w, 1)
+        :return:
+        """
+        new_centroids = np.zeros((self.k, 3))
+        samples_per_centroid = np.zeros((self.k, 1))
+        for sample_id, cluster_id in enumerate(cluster_ids):
+            new_centroids[cluster_id] = np.add(new_centroids[cluster_id], data[sample_id])
+            samples_per_centroid[cluster_id] += 1
 
-    def find_clusters(self):
-        for (x, y) in self.data_indexes:
-            sample = self.data[x][y].tolist()
-            dist = self.find_distances_for_sample(sample)
-            min_dist_id = np.asarray(dist).argmin()
-            sample.append(dist[min_dist_id])
-            self.clusters[min_dist_id].append(sample)
-        #print(np.array(self.clusters)[0])
-        return np.array(self.clusters)
+        denominator = np.ones(new_centroids.shape)
+        denominator *= samples_per_centroid
+        print(f"{new_centroids} iiii {denominator}")
 
-    def find_average_for_clusters(self):
-        colors = np.empty((self.k, 3))
-        variances = np.empty((self.k))
-        for cluster_with_id in enumerate(self.clusters):
-            #print(f"xdxdxd {cluster_with_id[1]}")
-            cluster = np.array(cluster_with_id[1])
-            #print(cluster)
-            #print(cluster.shape)
-            colors[cluster_with_id[0]] = np.mean(cluster, axis=0)[:-1]
-            variances[cluster_with_id[0]] = np.var(cluster, axis=0)[3]
-        return colors.astype(int), np.sum(variances)
-
-    def find_best_colors(self, iterations):
-        colors = np.empty((iterations, self.k, 3))
-        variances = np.empty((iterations, 2))
-        for i in range(0, iterations):
-            self.centroids = self.randoms[i*self.k:(i+1)*self.k]
-            self.find_clusters()
-            colors[i], variances[i][0] = self.find_average_for_clusters()
-            #self.centroids, self.odchylenie = self.initial_centroids()
-            variances[i][1] = np.sum(self.odchylenie)
-
-
-        color_id = np.argmin(np.transpose(variances)[0])
-        print(f"Wariancje: {variances}\nmin: {np.min(np.transpose(variances)[0])}\nid: {color_id}")
-        np.savetxt("variances.csv", variances, delimiter=",")
-        return colors[color_id]
-
-
+        new_centroids = np.divide(new_centroids, denominator).astype('uint8')
+        return new_centroids.astype('uint8')
 
 
 link = "https://i.scdn.co/image/39657963338c8bdfd49f4421e9242c6c2f87e8ff"
-kk=3
+kk = 5
 image_link = download_image_to_array(link)
 clustering = KMeansClustering(k=kk, data=image_link)
-colors = clustering.find_best_colors(1)
-img = np.empty((kk*100, 100, 3))
+show_image_from_array(image_link)
+clustering.calculate_initial_centroids()
+colors = clustering.calculate_colors()
+# colors = clustering.find_best_colors(1)
+img = np.empty((kk * 100, 100, 3))
 for i in range(0, kk):
-    img[100*i:100*i+99][0:99] = colors[i]
+     img[100 * i:100 * i + 99][0:99] = colors[i]
 
-#print(F"IMG: {img}")
 show_image_from_array(img)
-#show_image_from_array(clustering.samples_distances_for_centroids())
+# show_image_from_array(clustering.samples_distances_for_centroids())
