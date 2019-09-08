@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 from io import BytesIO
 
+POW = 3
 
 def print_full_array():
     np.set_printoptions(threshold=np.inf)
@@ -66,8 +67,7 @@ def calculate_distances_from_point(data, point):
 
 
 class KMeansClustering:
-
-    def __init__(self, k: int, data: np.ndarray):
+    def __init__(self, k: int, data: np.ndarray, block_black=False, block_black_and_white=False):
         """
         Method initializes object
         :param k: number of clusters, to which data will be divided
@@ -75,6 +75,8 @@ class KMeansClustering:
         containing samples (with shape (3)), that will be divided to clusters
         """
         self.data = np.array(data)
+        self.block_black = block_black
+        self.block_black_and_white = block_black_and_white
         self.data_flat = flatten_array(self.data)
         self.samples_count = self.data_flat.shape[0]
         self.data_indexes = [(x, y) for x in range(0, self.data.shape[0]) for y in range(0, self.data.shape[1])]
@@ -95,21 +97,30 @@ class KMeansClustering:
         """
         # find first centroid
         data_flat_indexes = range(self.samples_count)
-        # centroid_id = np.random.choice(data_flat_indexes)
-        # self.centroids[0] = self.data_flat[centroid_id]
-        self.centroids[0] = np.zeros(3)
+
+        if self.block_black or self.block_black_and_white:
+            self.centroids[0] = np.zeros(3)
+        else:
+            centroid_id = np.random.choice(data_flat_indexes)
+            self.centroids[0] = self.data_flat[centroid_id]
 
         # calculate probabilities for another centroids
         distances = calculate_distances_from_point(self.data_flat, self.centroids[0])
-        distances_square = np.float_power(distances, 2)
+        distances_square = np.float_power(distances, POW)
+
+        if self.block_black_and_white:
+            self.centroids[1] = np.ones(3) * 255
+            distances_from_white = calculate_distances_from_point(self.data_flat, self.centroids[1])
+            distances_square *= np.float_power(distances_from_white, POW)
+
         probability_for_samples = distances_square/sum(distances_square)
 
         # find another centroids
-        for i in range(1, self.k):
+        for i in range(2 if self.block_black_and_white else 1  , self.k):
             centroid_id = np.random.choice(data_flat_indexes, p=probability_for_samples)
             self.centroids[i] = self.data_flat[centroid_id]
             distances *= calculate_distances_from_point(self.data_flat, self.centroids[i])
-            distances_square *= np.float_power(distances, 3)
+            distances_square *= np.float_power(distances, POW)
             probability_for_samples = distances_square / sum(distances_square)
 
         return self.centroids
@@ -144,11 +155,11 @@ class KMeansClustering:
         while True:
             xd += 1
             new_cluster_ids = self.calculate_clusters()
-            if np.array_equal(cluster_ids, new_cluster_ids) or xd >= 3:
+            self.show_palette()
+            if np.array_equal(cluster_ids, new_cluster_ids) or xd >= 5:
                 break
             cluster_ids = new_cluster_ids
 
-        self.show_palette()
         self.create_cluster_image()
 
         return self.centroids
@@ -175,26 +186,36 @@ class KMeansClustering:
         new_centroids = np.zeros((self.k, 3))
         self.samples_per_centroid = np.zeros((self.k, 1))
         for sample_id, cluster_id in enumerate(cluster_ids):
+            print(f"sample id {sample_id} cluster id {cluster_id}")
             new_centroids[cluster_id] = np.add(new_centroids[cluster_id], data[sample_id])
             self.samples_per_centroid[cluster_id] += 1
         denominator = np.ones(new_centroids.shape)
         denominator *= self.samples_per_centroid
         new_centroids = np.divide(new_centroids, denominator)
+
+        if self.block_black or self.block_black_and_white:
+            new_centroids[0] = self.centroids[0]
+        if self.block_black_and_white:
+            new_centroids[1] = self.centroids[1]
+
         return new_centroids
 
 
-link = "https://i.scdn.co/image/125736ae7eabfbb4edc14307c5bc3313ee54442d"
+class ColorFinder:
+    def __init__(self, url):
+        self.image = download_image_to_array(url)
+        self.clustering_algorithm = KMeansClustering(k=5, data=self.image, block_black_and_white=True)
+        self.clustering_algorithm.calculate_initial_centroids()
+
+
+link = "https://i.scdn.co/image/0b2f8686d6ff9e978c3c58f93c996aaf94b51fb9"
 kk = 5
 image_link = download_image_to_array(link)
-clustering = KMeansClustering(k=kk, data=image_link)
+clustering = KMeansClustering(k=kk, data=image_link, block_black_and_white=True)
 show_image_from_array(image_link)
 clustering.calculate_initial_centroids()
 print(clustering.centroids)
 colors = clustering.calculate_colors()
-# colors = clustering.find_best_colors(1)
-img = np.empty((kk * 100, 100, 3))
-for i in range(0, kk):
-     img[100 * i:100 * i + 99][0:99] = colors[i]
-
+print(f"kolorki:\n{colors}")
 # show_image_from_array(img)
 # show_image_from_array(clustering.samples_distances_for_centroids())
