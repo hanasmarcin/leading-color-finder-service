@@ -44,9 +44,14 @@ class TestClusteringAlgorithm(TestCase):
         self.algorithm.centroids = np.empty(self.algorithm.centroids.shape)
         self.algorithm.set_random_centroid(0, np.ones(9))
         centroid = self.algorithm.centroids[0]
-        self.assertTrue(np.isin(np.array(((5, 9, 86), (22, 54, 183),
-                                          (4, 10, 86), (6, 8, 82), (22, 53, 183),
-                                          (200, 82, 199), (5, 9, 84))), centroid).any())
+        self.assertTrue(np.isin(self.data, centroid).any())
+
+        self.algorithm.centroids = np.empty(self.algorithm.centroids.shape)
+        self.algorithm.set_random_centroid(0, np.ones(9), probability=np.array((0, 0, 0, 0, 0, 0.5, 0, 0.5, 0)))
+        centroid = self.algorithm.centroids[0]
+        self.assertTrue(np.isin(np.array(((22, 53, 183), (200, 82, 199))), centroid).any())
+
+
 
     def test_calculate_initial_centroids(self):
         self.algorithm.centroids = np.empty(self.algorithm.centroids.shape)
