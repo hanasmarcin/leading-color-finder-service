@@ -113,7 +113,7 @@ class ClusteringAlgorithm:
         while True:
             iteration += 1
             new_cluster_ids = self.calculate_clusters()
-            if np.array_equal(cluster_ids, new_cluster_ids) or iteration >= 5:
+            if np.array_equal(cluster_ids, new_cluster_ids) or iteration >= 10:
                 break
             cluster_ids = new_cluster_ids
         return self.centroids, self.samples_per_centroid
@@ -122,7 +122,6 @@ class ClusteringAlgorithm:
         """
         Method calculates new centroids for given samples' distances
         from existing centroids and their assignment to them
-        :param data: nparray with shape (h*w, 3)
         :param cluster_ids: nparray with shape (h*w, 1)
         :return:
         """

@@ -27,7 +27,8 @@ class TestClusteringAlgorithm(TestCase):
                                              191.78633945096297, 181.05524018928588, 109.66312051004202)))
         self.centroids = np.array(((0, 0, 0), (255, 255, 255), (200, 82, 199), (4, 10, 86), (22, 53, 183)))
         self.cluster_ids_expected = np.array((0, 3, 4, 3, 3, 4, 0, 2, 3))
-        self.final_centroids_expected = np.array(((0, 0, 0), (255, 255, 255), (200, 82, 199), (5, 9, 84.5), (22, 53.5, 183)))
+        self.final_centroids_expected = np.array(((0, 0, 0), (255, 255, 255), (200, 82, 199),
+                                                  (5, 9, 84.5), (22, 53.5, 183)))
         self.samples_per_centroids_expected = np.array((2, 0, 1, 4, 2))
         k = 5
         block_points = np.array(((0, 0, 0), (255, 255, 255)))
@@ -50,8 +51,6 @@ class TestClusteringAlgorithm(TestCase):
         self.algorithm.set_random_centroid(0, np.ones(9), probability=np.array((0, 0, 0, 0, 0, 0.5, 0, 0.5, 0)))
         centroid = self.algorithm.centroids[0]
         self.assertTrue(np.isin(np.array(((22, 53, 183), (200, 82, 199))), centroid).any())
-
-
 
     def test_calculate_initial_centroids(self):
         self.algorithm.centroids = np.empty(self.algorithm.centroids.shape)
