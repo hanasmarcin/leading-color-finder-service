@@ -113,7 +113,7 @@ class ClusteringAlgorithm:
         while True:
             iteration += 1
             new_cluster_ids = self.calculate_clusters()
-            if np.array_equal(cluster_ids, new_cluster_ids) or iteration >= 10:
+            if np.array_equal(cluster_ids, new_cluster_ids) or iteration >= 5:
                 break
             cluster_ids = new_cluster_ids
         return self.centroids, self.samples_per_centroid

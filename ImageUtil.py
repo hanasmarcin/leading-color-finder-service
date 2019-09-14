@@ -9,7 +9,6 @@ def show_image_from_array(image_array):
     Function shows image based of the given nparray
     """
     image = Image.fromarray(image_array.astype('uint8'))
-    image.resize((64, 64))
     image.show()
 
 
@@ -27,7 +26,7 @@ class ImageUtil:
         :return: nparray with shape (h, w, 3), containing RGB values for each pixel of the picture
         """
         response = requests.get(self.url)
-        image = Image.open(BytesIO(response.content))
+        image = Image.open(BytesIO(response.content)).resize((64, 64))
         image_array = np.array(image)
         return image_array
 
