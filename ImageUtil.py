@@ -9,6 +9,7 @@ def show_image_from_array(image_array):
     Function shows image based of the given nparray
     """
     image = Image.fromarray(image_array.astype('uint8'))
+    image.resize((64, 64))
     image.show()
 
 
