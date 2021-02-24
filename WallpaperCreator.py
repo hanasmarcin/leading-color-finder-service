@@ -62,20 +62,26 @@ def create_img(x_size, y_size, colors):
 
     list = [(x, y, sqrt((x-x_size/2.0)**2 + (y-y_size/2.0)**2), seed) for x in range(x_size) for y in range(y_size)]
     array = np.array(list)
+    print("before calc-color")
     y = model(array).numpy()
+    print("after calc-color")
     y = y.reshape((x_size, y_size))
     R = calc_color(y)
+    print("xd2")
     R = (R % 100)
     image_data = np.zeros([R.shape[0], R.shape[1], 3])
 
     colors_data = np.array([color.get("pixel_count") for color in colors])
     colors_data = (colors_data / np.sum(colors_data) * 100).astype('uint8')
     colors_count = colors_data.shape[0]
+    print("xd3")
     min_max_R = np.array([(0 if i == 0 else np.sum(colors_data[0:i]), 100 if i == colors_count - 1 else np.sum(colors_data[0:i+1])) for i in range(colors_count)])
-
+    print("xd4")
     for i in range(colors_count):
         true_indices = np.where(np.logical_and(R >= min_max_R[i, 0], R < min_max_R[i, 1]))
         image_data[true_indices[0], true_indices[1], :] = np.array(colors[i].get("color"))
 
+    print("xd5")
     img = Image.fromarray(image_data.astype('uint8'), "RGB")
+    print("xd6")
     return img
