@@ -2,7 +2,7 @@ import requests
 import numpy as np
 from io import BytesIO
 
-from pil import Image
+from PIL import Image
 
 
 def show_image_from_array(image_array):

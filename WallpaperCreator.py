@@ -1,6 +1,6 @@
 import numpy as np
 from math import sqrt
-from pil import Image
+from PIL import Image
 from tensorflow.keras import models, layers, initializers, Model
 
 
