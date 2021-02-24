@@ -39,9 +39,9 @@ def create_img(x_size, y_size, batch_size, colors):
     pixel_count = 0
     while pixel_count < x_size*y_size:
         batch_end = pixel_count + (batch_size if pixel_count + batch_size < x_size*y_size else (x_size*y_size) % batch_size)
+        print((pixel_count, batch_end, x_size*y_size))
         np.copyto(y[pixel_count:batch_end, :], run_nn(nn, array[pixel_count:batch_end, :]))
         pixel_count = batch_end
-        # print(y)
 
     y = y.reshape((x_size, y_size))
     R = calc_color(y)
