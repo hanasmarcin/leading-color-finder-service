@@ -6,7 +6,7 @@ import WallpaperCreator
 import resource
 
 app = Flask(__name__)
-resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 1000 * 1024 * 1024))
+resource.setrlimit(resource.RLIMIT_AS, (1024 * 1024 * 1024, 2 * 1024 * 1024 * 1024))
 
 
 @app.route("/")
