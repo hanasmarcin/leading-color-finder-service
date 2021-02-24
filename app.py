@@ -29,7 +29,7 @@ def get_colors_for_image():
         abort(400, "Wrong url was provided.")
 
 
-@app.route("/wallpaper", methods=["GET"])
+@app.route("/wallpaper", methods=["GET", "POST"])
 def get_wallpaper_for_colors():
     start = time.monotonic()
     colors = request.json
