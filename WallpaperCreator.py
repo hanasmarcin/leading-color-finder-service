@@ -48,9 +48,9 @@ if gpus:
     except RuntimeError as e:
         print(e)
 
-tf.config.threading.set_intra_op_parallelism_threads(1)
-tf.config.threading.set_inter_op_parallelism_threads(1)
-tf.device('/CPU:0')
+# tf.config.threading.set_intra_op_parallelism_threads(1)
+# tf.config.threading.set_inter_op_parallelism_threads(1)
+# tf.device('/CPU:0')
 
 layer = np.array([50, 20, 1])
 model = create_model(0.08, layer)
