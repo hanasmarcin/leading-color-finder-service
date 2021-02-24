@@ -6,7 +6,8 @@ class ColorFinder:
     def __init__(self, url, k):
         self.imageUtil = ImageUtil(url)
         self.k = k
-        self.block_colors = np.array(((255, 255, 255), (0, 0, 0)))
+        self.block_colors = None
+        # self.block_colors = np.array(((255, 255, 255), (0, 0, 0)))
 
     def run(self):
         algorithm = ClusteringAlgorithm(k=self.k, data=self.imageUtil.image_array, block_points=self.block_colors)

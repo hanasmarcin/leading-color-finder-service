@@ -1,7 +1,8 @@
 import requests
 import numpy as np
-from PIL import Image
 from io import BytesIO
+
+from pil import Image
 
 
 def show_image_from_array(image_array):
