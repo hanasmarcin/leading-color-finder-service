@@ -1,3 +1,4 @@
+import time
 from io import BytesIO
 
 from flask import Flask, request, abort, jsonify, send_file
@@ -30,16 +31,20 @@ def get_colors_for_image():
 
 @app.route("/wallpaper", methods=["GET"])
 def get_wallpaper_for_colors():
+    start = time.monotonic()
     colors = request.json
+    batch = int(request.args.get("batch"))
+    x_size = int(request.args.get("x_size"))
+    y_size = int(request.args.get("y_size"))
     if colors is None:
         abort(400, "Colors were not provided.")
     try:
         colors = list(colors)
         file_obj = BytesIO()
-        pil_img = WallpaperCreator.create_img(2340, 1080, 20000, colors)
+        pil_img = WallpaperCreator.create_img(x_size, y_size, batch, colors)
         pil_img.save(file_obj, 'PNG')
         file_obj.seek(0)
-        # abort(400, "Oki ;)")
+        print(time.monotonic()-start)
         return send_file(file_obj, mimetype='image/png')
     except OSError:
         abort(400, "Wrong url was provided.")

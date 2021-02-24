@@ -10,13 +10,13 @@ def calc_color(R):
 def prepare_neuron_layers(input_count, network_shape, param):
     scale = param / np.sum(network_shape)
     neuron_layers = []
-    first_layer = np.random.normal(loc=0.0, scale=scale, size=(input_count + 1, network_shape[0]))
+    first_layer = np.random.normal(loc=0.0, scale=scale, size=(input_count + 1, network_shape[0])).astype('float16')
     neuron_layers.append(first_layer)
 
     # Create rest of the layers with random coefficients
     for layer_count in range(1, network_shape.shape[0]):
         layer = np.random.normal(loc=0.0, scale=scale,
-                                 size=(network_shape[layer_count - 1] + 1, network_shape[layer_count]))
+                                 size=(network_shape[layer_count - 1] + 1, network_shape[layer_count])).astype('float16')
         neuron_layers.append(layer)
     return neuron_layers
 
@@ -24,7 +24,8 @@ def prepare_neuron_layers(input_count, network_shape, param):
 def run_nn(neuron_layers, x):
     for layer in neuron_layers:
         x = np.append(x, np.ones(shape=(x.shape[0], 1)), axis=1)
-        x = np.tanh(x @ layer)
+
+        x = np.tanh(np.matmul(x, layer))
 
     return x
 
