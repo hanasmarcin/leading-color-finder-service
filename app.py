@@ -36,7 +36,7 @@ def get_wallpaper_for_colors():
     try:
         colors = list(colors)
         file_obj = BytesIO()
-        pil_img = WallpaperCreator.create_img(2340, 1080, colors)
+        pil_img = WallpaperCreator.create_img(2340, 1080, 10000, colors)
         pil_img.save(file_obj, 'PNG')
         file_obj.seek(0)
         # abort(400, "Oki ;)")
