@@ -3,11 +3,9 @@ from io import BytesIO
 from flask import Flask, request, abort, jsonify, send_file
 from ColorFinder import ColorFinder
 import WallpaperCreator
-import resource
+
 
 app = Flask(__name__)
-soft, hard = resource.getrlimit(resource.RLIMIT_DATA)
-resource.setrlimit(resource.RLIMIT_DATA, (512 * 1024 * 1024, hard))
 
 
 @app.route("/")
@@ -37,12 +35,12 @@ def get_wallpaper_for_colors():
         abort(400, "Colors were not provided.")
     try:
         colors = list(colors)
-        # file_obj = BytesIO()
+        file_obj = BytesIO()
         pil_img = WallpaperCreator.create_img(2340, 1080, colors)
-        # pil_img.save(file_obj, 'PNG')
-        # file_obj.seek(0)
-        abort(400, "Oki ;)")
-        # return send_file(file_obj, mimetype='image/png')
+        pil_img.save(file_obj, 'PNG')
+        file_obj.seek(0)
+        # abort(400, "Oki ;)")
+        return send_file(file_obj, mimetype='image/png')
     except OSError:
         abort(400, "Wrong url was provided.")
 

@@ -1,70 +1,38 @@
 import numpy as np
 from math import sqrt
 from PIL import Image
-from tensorflow.keras import models, layers, initializers, Model
-import tensorflow as tf
-
-
-def create_model(beta, layer_sizes):
-    initializer = initializers.RandomNormal(mean=0., stddev=beta/np.sum(layer_sizes))
-    model = models.Sequential()
-    model.add(layers.Input(shape=(4,)))
-    for i in range(layer_sizes.shape[0]):
-
-        model.add(layers.Dense(layer_sizes[i], activation='tanh', kernel_initializer=initializer))
-
-    return model
 
 
 def calc_color(R):
     return ((R - np.min(R))/(np.max(R) - np.min(R))*600).astype('uint8')
 
 
-def reset_weights(model):
-    for layer in model.layers:
-        if isinstance(layer, Model):
-            reset_weights(layer)
-            continue
-        for k, initializer in layer.__dict__.items():
-            if "initializer" not in k:
-                continue
-                # find the corresponding variable
-            var = getattr(layer, k.replace("_initializer", ""))
-            var.assign(initializer(var.shape, var.dtype))
+def run_nn(network_shape, x, param):
+    scale = param/np.sum(network_shape)
+    neuron_layers = []
+    input_count = x.shape[1]
+    first_layer = np.random.normal(loc=0.0, scale=scale, size=(input_count + 1, network_shape[0]))
+    neuron_layers.append(first_layer)
 
+    # Create rest of the layers with random coefficients
+    for layer_count in range(1, network_shape.shape[0]):
+        layer = np.random.normal(loc=0.0, scale=scale, size=(network_shape[layer_count - 1] + 1, network_shape[layer_count]))
+        neuron_layers.append(layer)
 
-# gpus = tf.config.experimental.list_physical_devices('GPU')
-# if gpus:
-#     try:
-#     except RuntimeError as e:
-#         print(e)
+    for layer in neuron_layers:
+        x = np.append(x, np.ones(shape=(x.shape[0], 1)), axis=1)
+        print(x.shape)
+        print(layer.shape)
+        x = np.tanh(x @ layer)
 
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    try:
-        for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
-        # tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=256)])
-    except RuntimeError as e:
-        print(e)
-
-# tf.config.threading.set_intra_op_parallelism_threads(1)
-# tf.config.threading.set_inter_op_parallelism_threads(1)
-# tf.device('/CPU:0')
-
-layer = np.array([50, 20, 1])
-model = create_model(0.08, layer)
-seed = -1
+    return x
 
 
 def create_img(x_size, y_size, colors):
-    reset_weights(model)
 
-    list = [(x, y, sqrt((x-x_size/2.0)**2 + (y-y_size/2.0)**2), seed) for x in range(x_size) for y in range(y_size)]
+    list = [(x, y, sqrt((x-x_size/2.0)**2 + (y-y_size/2.0)**2), -1) for x in range(x_size) for y in range(y_size)]
     array = np.array(list)
-    print("before calc-color")
-    y = model(array).numpy()
-    print("after calc-color")
+    y = run_nn(np.array((50, 20, 1)), array, 0.08)
     y = y.reshape((x_size, y_size))
     R = calc_color(y)
     print("xd2")
@@ -74,14 +42,10 @@ def create_img(x_size, y_size, colors):
     colors_data = np.array([color.get("pixel_count") for color in colors])
     colors_data = (colors_data / np.sum(colors_data) * 100).astype('uint8')
     colors_count = colors_data.shape[0]
-    print("xd3")
     min_max_R = np.array([(0 if i == 0 else np.sum(colors_data[0:i]), 100 if i == colors_count - 1 else np.sum(colors_data[0:i+1])) for i in range(colors_count)])
-    print("xd4")
     for i in range(colors_count):
         true_indices = np.where(np.logical_and(R >= min_max_R[i, 0], R < min_max_R[i, 1]))
         image_data[true_indices[0], true_indices[1], :] = np.array(colors[i].get("color"))
 
-    print("xd5")
     img = Image.fromarray(image_data.astype('uint8'), "RGB")
-    print("xd6")
     return img
