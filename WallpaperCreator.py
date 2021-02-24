@@ -35,7 +35,7 @@ def create_img(x_size, y_size, batch_size, colors):
     list = [(x, y, sqrt((x-x_size/2.0)**2 + (y-y_size/2.0)**2), -1) for x in range(x_size) for y in range(y_size)]
     array = np.array(list)
 
-    nn = prepare_neuron_layers(4, np.array((30, 10, 1)), 0.07)
+    nn = prepare_neuron_layers(4, np.array((10, 10, 1)), 0.05)
     y = np.zeros((array.shape[0], 1))
     pixel_count = 0
     while pixel_count < x_size*y_size:
