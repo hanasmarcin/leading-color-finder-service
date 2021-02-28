@@ -63,8 +63,6 @@ class ImageUtil:
         h = 0
         for i, pixel_count_for_color in enumerate(pixel_count_for_colors):
             new_h = h + int(pixel_count_for_color[0])
-            print(h)
-            print(new_h)
             img[h:new_h] = colors[i]
             h = new_h
         show_image_from_array(img)

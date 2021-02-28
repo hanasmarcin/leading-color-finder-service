@@ -32,7 +32,9 @@ def run_nn(neuron_layers, x):
 
 def create_img(x_size, y_size, batch_size, colors):
 
-    list = [(x, y, sqrt((x-x_size/2.0)**2 + (y-y_size/2.0)**2), -1) for x in range(x_size) for y in range(y_size)]
+    x_p = np.random.normal(loc=x_size * 1.2, scale=x_size * 0.2/3)
+    y_p = np.random.normal(loc=y_size/2.0, scale=x_size/6)
+    list = [(x, y, sqrt((x - x_p)**2 + (y - y_p)**2), -1) for x in range(x_size) for y in range(y_size)]
     array = np.array(list)
 
     nn = prepare_neuron_layers(4, np.array((10, 10, 1)), 0.05)
@@ -40,7 +42,6 @@ def create_img(x_size, y_size, batch_size, colors):
     pixel_count = 0
     while pixel_count < x_size*y_size:
         batch_end = pixel_count + (batch_size if pixel_count + batch_size < x_size*y_size else (x_size*y_size) % batch_size)
-        # print((pixel_count, batch_end, x_size*y_size))
         np.copyto(y[pixel_count:batch_end, :], run_nn(nn, array[pixel_count:batch_end, :]))
         pixel_count = batch_end
 
